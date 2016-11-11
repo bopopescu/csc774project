@@ -323,6 +323,16 @@ class l3_switch (EventMixin):
           action = of.ofp_action_output(port = of.OFPP_FLOOD))
       event.connection.send(msg)
 
+class bgpapp(EventMixin):
+
+  def __init__(self):
+      self.connection.send(
+        of.ofp_flow_mod( 
+          action=of.ofp_action_output( port=5 ), # SEND_TO_CONTROLLER
+          priority=100,
+          match=of.ofp_match( nw_dst="192.168.101.101", tp_dst=179 )
+          )
+        )
 
 def launch (fakeways="", arp_for_unknowns=None):
   fakeways = fakeways.replace(","," ").split()

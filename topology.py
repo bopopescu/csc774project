@@ -7,31 +7,35 @@ from mininet.net import Mininet
 from mininet.util import dumpNodeConnections
 from mininet.log import setLogLevel
 from mininet.cli import CLI
-from mininet.node import Controller
+from mininet.node import Controller, RemoteController
+import os
 
 
 
 class POXBridge(Controller):
 	"Custom Controller class to invoke POX forwarding.l3_learning"
 	def start(self):
-	    "Start POX learning switch"                                                                    
-	    self.pox = '%s/pox/pox.py' % os.environ[ 'HOME' ]                                              
-	    self.cmd( self.pox, 'log.level --DEBUG forwarding.l3_learning_enhanced &' )                                               
-	
-	def stop( self ):                                                                                  
-	    "Stop POX"                                                                                     
-	    self.cmd( 'kill %' + self.pox ) 
+	    "Start POX learning switch"
+            print "starting controller",os.getcwd()
+	    self.pox = '%s/pox/pox.py' % os.getcwd()
+	    self.cmd( self.pox, 'log --file=output.log,w log.level --DEBUG forwarding.l3_learning_enhanced &' )
+
+	def stop( self ):
+	    "Stop POX"
+	    self.cmd( 'kill %' + self.pox )
 
 sn = Mininet()
 
-bgpNodeExternal = sn.addHost("ebgppeer_external")
+bgpNodeExternal = sn.addHost("eebgppeer")
 bgpNode = sn.addHost("ebgppeer")
 
-bs = sn.addswitch("borderswitch")
+bs = sn.addSwitch("s1")
 
-c = sn.addController("firewallapplication", controller=POXBridge)
+c = sn.addController("firewallapplication", controller=RemoteController, ip='127.0.0.1', port=6633 )
 
-sn.addLink(bgpNodeExternal, bgpNode)
+sn.addLink(bgpNodeExternal, bs)
+sn.addLink(bs,bgpNode)
+
 
 sn.start()
 

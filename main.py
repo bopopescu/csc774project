@@ -28,6 +28,7 @@ sn = Mininet()
 
 bgpNodeExternal = sn.addHost("eebgppeer")
 bgpNode = sn.addHost("ebgppeer")
+#lookupserviceNode = sn.addHost("lookservice", ip="0.0.0.0")
 
 bs = sn.addSwitch("s1")
 
@@ -35,8 +36,8 @@ c = sn.addController("firewallapplication", controller=RemoteController, ip='127
 
 sn.addLink(bgpNodeExternal, bs)
 sn.addLink(bs,bgpNode)
-
-
+#sn.addLink(c,lookupServiceNode)
+#lookupserviceNode.popen("export APP= ;flask run --host=0.0.0.0", shell=True)
 sn.start()
 
 CLI( sn )

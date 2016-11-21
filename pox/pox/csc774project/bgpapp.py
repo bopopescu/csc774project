@@ -19,7 +19,7 @@ import time
 class bgpapp(EventMixin):
 
   def __init__(self):
-      pass
+      core.openflow.addListeners(self)
 
   def _handle_PacketIn (self, event):
     dpid = event.connection.dpid
@@ -28,19 +28,27 @@ class bgpapp(EventMixin):
     if not packet.parsed:
       log.warning("%i %i ignoring unparsed packet", dpid, inport)
       return
+
     log.debug(packet)
 
     if packet.type == ethernet.IP_TYPE and packet.next.dstip is "10.0.0.2" and packet.next.protocol == ipv4.TCP_PROTOCOL:
       log.debug("%i %i IP %s => %s,%s", dpid,inport,packet.next.srcip,packet.next.dstip,packet.next.next.dstport)
 
   def _handle_ConnectionUp (self, event):
+      log.debug("Edge Switch is up..")
       self.connection=event.connection
-      event.connection.send(
+      log.debug("Installing Flow for BGP ..")
+      self.connection.send(
         of.ofp_flow_mod(
+          command=of.OFPFC_ADD,
           action=of.ofp_action_output( port=of.OFPP_CONTROLLER ), # SEND_TO_CONTROLLER
-          priority=100,
-          match=of.ofp_match( nw_dst="10.0.0.2", tp_dst=179 )
+          priority=42,
+          match=of.ofp_match( dl_type=0x800, nw_dst="10.0.0.2" )
           ))
+
+  def _handle_ConnectionDown(self,event):
+      log.debug("Switch Down")
 
 def launch() :
   core.registerNew(bgpapp)
+  log.debug("bgpapp running")

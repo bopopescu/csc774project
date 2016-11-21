@@ -7,7 +7,7 @@ from mininet.net import Mininet
 from mininet.util import dumpNodeConnections
 from mininet.log import setLogLevel
 from mininet.cli import CLI
-from mininet.node import Controller, RemoteController
+from mininet.node import Controller, RemoteController, Switch, Node
 import os
 
 
@@ -24,10 +24,27 @@ class POXBridge(Controller):
 	    "Stop POX"
 	    self.cmd( 'kill %' + self.pox )
 
+class QuaggaRouter( Node ):
+    "Quagga Router running zebra and bgp daemons."
+    def __init__(self,*args,**kwargs):
+		super(QuaggaRouter,self).__init__(*args,**kwargs)
+
+    def start(self,*args,**kwargs):
+		self.cmd("/usr/lib/quagga/zebra -f conf/zebra-%s.conf -d -i /tmp/zebra-%s.pid > logs/%s-zebra-stdout 2>&1" % (self.name,self.name,self.name))
+		self.waitOutput()
+		self.cmd("/usr/lib/quagga/bgpd -f conf/bgpd-%s.conf -d -i /tmp/bgp-%s.pid > logs/%s-bgpd-stdout 2>&1" % (self.name,self.name,self.name), shell=True)
+		self.router.waitOutput()
+		log("Starting zebra and bgpd on %s" % self.name)
+
+    def stop(self):
+		pass
+
 sn = Mininet()
 
-bgpNodeExternal = sn.addHost("eebgppeer")
-bgpNode = sn.addHost("ebgppeer")
+#bgpNodeExternal = sn.addHost("eebgppeer")
+bgpNodeExternal = sn.addSwitch(name="eebgppeer",cls=QuaggaRouter)
+#bgpNode = sn.addHost("ebgppeer")
+bgpNode = sn.addSwitch(name="ebgppeer",cls=QuaggaRouter)
 #lookupserviceNode = sn.addHost("lookservice", ip="0.0.0.0")
 
 bs = sn.addSwitch("s1")
@@ -43,3 +60,4 @@ sn.start()
 CLI( sn )
 
 sn.stop()
+os.system("killall -9 zebra bgpd")

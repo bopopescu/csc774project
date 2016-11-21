@@ -19,13 +19,8 @@ import time
 class bgpapp(EventMixin):
 
   def __init__(self):
-      self.connection.send(
-        of.ofp_flow_mod( 
-          action=of.ofp_action_output( port=of.S ), # SEND_TO_CONTROLLER
-          priority=100,
-          match=of.ofp_match( nw_dst="10.0.0.2", tp_dst=179 )
-          )
-        )
+      pass
+
   def _handle_PacketIn (self, event):
     dpid = event.connection.dpid
     inport = event.port
@@ -35,14 +30,17 @@ class bgpapp(EventMixin):
       return
     log.debug(packet)
 
-    if packet.type == ethernet.IP_TYPE and packet.next.dstip is "10.0.0.2" and packet.next.protocol == ipv4.TCP_PROTOCOL):
+    if packet.type == ethernet.IP_TYPE and packet.next.dstip is "10.0.0.2" and packet.next.protocol == ipv4.TCP_PROTOCOL:
       log.debug("%i %i IP %s => %s,%s", dpid,inport,packet.next.srcip,packet.next.dstip,packet.next.next.dstport)
- 
 
+  def _handle_ConnectionUp (self, event):
+      self.connection=event.connection
+      event.connection.send(
+        of.ofp_flow_mod(
+          action=of.ofp_action_output( port=of.OFPP_CONTROLLER ), # SEND_TO_CONTROLLER
+          priority=100,
+          match=of.ofp_match( nw_dst="10.0.0.2", tp_dst=179 )
+          ))
 
-      # msg = of.ofp_packet_out(in_port = inport, data = event.ofp,
-      #     action = of.ofp_action_output(port = of.OFPP_FLOOD))
-      # event.connection.send(msg)
-
-def launch (fakeways="", arp_for_unknowns=None):
+def launch() :
   core.registerNew(bgpapp)
